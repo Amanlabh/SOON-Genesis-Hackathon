@@ -5,8 +5,25 @@ import axios from '../api/axios';
 import { ethers } from 'ethers';
 import ABI from '../utils/QuizApp.json';
 import { QRCodeSVG } from 'qrcode.react';
-import { Dialog, DialogContent, DialogActions, Button, IconButton, TextField, InputAdornment, CircularProgress } from '@mui/material';
-import { Download, Copy, FileText, Users, HelpCircle, Trophy, Upload } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogActions,
+  Button,
+  IconButton,
+  TextField,
+  InputAdornment,
+  CircularProgress,
+} from '@mui/material';
+import {
+  Download,
+  Copy,
+  FileText,
+  Users,
+  HelpCircle,
+  Trophy,
+  Upload,
+} from 'lucide-react';
 
 const PdfToQuiz = () => {
   const { walletAddress } = useContext(WalletContext);
@@ -14,7 +31,7 @@ const PdfToQuiz = () => {
     creatorName: '',
     numParticipants: '',
     questionCount: '',
-    rewardPerScore: ''
+    rewardPerScore: '',
   });
   const [pdfFile, setPdfFile] = useState(null);
   const [quizId, setQuizId] = useState(null);
@@ -28,14 +45,14 @@ const PdfToQuiz = () => {
   const fileInputRef = useRef();
   const [quizIds, setQuizIds] = useState([]);
   const [quizQids, setQuizQids] = useState([]);
-  
-  const CONTRACT_ADDRESS = '0x204533Dd6e6E53fb823f83E079018aB482779C93'
+
+  const CONTRACT_ADDRESS = '0x204533Dd6e6E53fb823f83E079018aB482779C93';
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({
       ...formData,
-      [name]: value
+      [name]: value,
     });
   };
 
@@ -51,16 +68,23 @@ const PdfToQuiz = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-  
+
     if (!walletAddress) {
       toast.error('Please connect the wallet');
       return;
     }
-  
-    const { creatorName, numParticipants, questionCount, rewardPerScore } = formData;
-  
+
+    const { creatorName, numParticipants, questionCount, rewardPerScore } =
+      formData;
+
     // Validate form fields
-    if (!creatorName || !numParticipants || !questionCount || !rewardPerScore || !pdfFile) {
+    if (
+      !creatorName ||
+      !numParticipants ||
+      !questionCount ||
+      !rewardPerScore ||
+      !pdfFile
+    ) {
       toast.error('All fields are required');
       return;
     }
@@ -72,13 +96,20 @@ const PdfToQuiz = () => {
       toast.error('Numbers cannot be negative');
       return;
     }
-  
-     // Handle decimal for rewardPerScore
-     const rewardPerScoreInWei = ethers.utils.parseUnits(rewardPerScore.toString(), 18);
-  
-     // Calculate the total cost with decimals handled
-     const totalCost = rewardPerScoreInWei.mul(numParticipants).mul(questionCount).mul(ethers.BigNumber.from('110')).div(ethers.BigNumber.from('100'));
-  
+
+    // Handle decimal for rewardPerScore
+    const rewardPerScoreInWei = ethers.utils.parseUnits(
+      rewardPerScore.toString(),
+      18
+    );
+
+    // Calculate the total cost with decimals handled
+    const totalCost = rewardPerScoreInWei
+      .mul(numParticipants)
+      .mul(questionCount)
+      .mul(ethers.BigNumber.from('110'))
+      .div(ethers.BigNumber.from('100'));
+
     try {
       // Prepare data for submission to the API
       const dataToSubmit = new FormData();
@@ -89,52 +120,52 @@ const PdfToQuiz = () => {
       dataToSubmit.append('questionCount', questionCount);
       dataToSubmit.append('rewardPerScore', rewardPerScore);
       dataToSubmit.append('totalCost', totalCost);
-  
+
       setLoading(true);
-  
+
       // Submit the quiz to the API first
       const response = await axios.post(`/api/quiz/create/pdf`, dataToSubmit, {
         headers: {
-          'Content-Type': 'multipart/form-data'
-        }
+          'Content-Type': 'multipart/form-data',
+        },
       });
-  
+
       const quizId = response.data.quizId; // Get quizId from the response
       setQuizId(quizId);
-  
+
       // Check if MetaMask is available
       if (typeof window.ethereum !== 'undefined') {
         // Create a provider and signer
         const provider = new ethers.providers.Web3Provider(window.ethereum);
         const signer = provider.getSigner();
-  
+
         // Initialize the contract with ABI
         const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI.abi, signer);
-  
+
         // Convert totalCost to wei (smallest unit of Ether)
         const budget = ethers.BigNumber.from(totalCost.toString());
-  
+
         // Call the smart contract to create the quiz
         const tx = await contract.createQuiz(
-          quizId,              // Use the quizId received from the API
+          quizId, // Use the quizId received from the API
           questionCount,
-          rewardPerScoreInWei,  // Send the rewardPerScore in wei
-          { value: budget }     // Send the total cost with the transaction
+          rewardPerScoreInWei, // Send the rewardPerScore in wei
+          { value: budget } // Send the total cost with the transaction
         );
-  
+
         await tx.wait(); // Wait for the transaction to be mined
         toast.success('Quiz successfully created');
         loadAllQuizzes();
-  
+
         // Reset form data after successful creation
         setFormData({
           creatorName: '',
           prompt: '',
           numParticipants: '',
           questionCount: '',
-          rewardPerScore: ''
+          rewardPerScore: '',
         });
-  
+
         // Optionally, open modal or perform any other action
         setLoading(false);
         setOpen(true);
@@ -142,8 +173,14 @@ const PdfToQuiz = () => {
         toast.error('MetaMask not found. Please install MetaMask.');
       }
     } catch (error) {
-      console.error(error.response?.data?.message || 'An error occurred while creating the quiz');
-      toast.error(error.response?.data?.message || 'An error occurred while creating the quiz');
+      console.error(
+        error.response?.data?.message ||
+          'An error occurpurple while creating the quiz'
+      );
+      toast.error(
+        error.response?.data?.message ||
+          'An error occurpurple while creating the quiz'
+      );
     } finally {
       setLoading(false);
     }
@@ -156,7 +193,9 @@ const PdfToQuiz = () => {
   const handleDownload = () => {
     const svg = qrRef.current.querySelector('svg');
     const svgData = new XMLSerializer().serializeToString(svg);
-    const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+    const svgBlob = new Blob([svgData], {
+      type: 'image/svg+xml;charset=utf-8',
+    });
     const svgUrl = URL.createObjectURL(svgBlob);
     const downloadLink = document.createElement('a');
     downloadLink.href = svgUrl;
@@ -177,6 +216,7 @@ const PdfToQuiz = () => {
       setIsPublic(true);
       toast.success('Quiz has started');
     } catch (error) {
+      console.log(error);
       toast.error('Failed to start the quiz');
     }
   };
@@ -185,39 +225,45 @@ const PdfToQuiz = () => {
     setStartDisabled(true);
     try {
       // Update the quiz status in the API
-      await axios.put(`/api/quiz/update/${quizId}`, { isPublic: false, isFinished: true });
+      await axios.put(`/api/quiz/update/${quizId}`, {
+        isPublic: false,
+        isFinished: true,
+      });
       setIsPublic(false);
       setCloseDisabled(false);
-  
+
       if (typeof window.ethereum !== 'undefined') {
         // Create a provider and signer
         const provider = new ethers.providers.Web3Provider(window.ethereum);
         const signer = provider.getSigner();
-        console.log("Signer", signer);
-  
+        console.log('Signer', signer);
+
         // Initialize the contract with ABI
         const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI.abi, signer);
-  
+
         // Find the index of the quizId in the quizQids array
         const quizIndex = quizQids.indexOf(quizId);
         if (quizIndex === -1) {
           throw new Error('Quiz not found in quizQids array');
         }
         const plusoneindex = quizIndex + 1; // Adjust index if necessary for your contract logic
-  
-        console.log("Quiz Index", plusoneindex);
-  
+
+        console.log('Quiz Index', plusoneindex);
+
         // Call the smart contract to end the quiz
         const tx = await contract.endQuiz(plusoneindex);
-  
+
         await tx.wait(); // Wait for the transaction to be mined
         toast.success('Quiz has ended');
         setOpen(false);
+        setStartDisabled(false);
+        setIsPublic(false);
+        setCloseDisabled(true);
       } else {
-        toast.error("MetaMask not found. Please install MetaMask.");
+        toast.error('MetaMask not found. Please install MetaMask.');
       }
     } catch (error) {
-      console.error("Error stopping quiz:", error);
+      console.error('Error stopping quiz:', error);
       if (error.code === -32000) {
         toast.error('Transaction failed: ' + error.data.message); // Show the revert reason if available
       } else {
@@ -229,51 +275,48 @@ const PdfToQuiz = () => {
   const loadAllQuizzes = async () => {
     try {
       const { ethereum } = window;
-  
+
       if (!ethereum) {
         toast.error('MetaMask not found. Please install MetaMask.');
-        console.error('MetaMask not available. Make sure the MetaMask extension is installed.');
+        console.error(
+          'MetaMask not available. Make sure the MetaMask extension is installed.'
+        );
         return;
       }
-  
+
       console.log('Requesting MetaMask account access...');
       await ethereum.request({ method: 'eth_requestAccounts' });
-  
+
       console.log('Wallet Address', await ethereum.selectedAddress);
-  
+
       // Debugging: Check if ethers is defined
       console.log('Ethers object:', ethers); // This should not be undefined
-  
+
       if (!ethers || !ethers.providers) {
         console.error('Ethers.js is not properly imported or initialized.');
         toast.error('Ethers.js library is missing or not initialized.');
         return;
       }
-  
+
       // Initialize provider and signer
       console.log('Initializing provider and signer...');
       const provider = new ethers.providers.Web3Provider(ethereum);
       const signer = provider.getSigner();
-      console.log("Signer", signer)
-      
+      console.log('Signer', signer);
+
       console.log('Provider and signer initialized:', provider, signer);
-  
+
       // Create contract instance
       console.log('Creating contract instance...');
-      const contract = new ethers.Contract(
-        CONTRACT_ADDRESS,
-        ABI.abi,
-        signer
-      );
-  
+      const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI.abi, signer);
+
       // Fetch the quizzes
       console.log('Fetching quizzes from the contract...');
       const result = await contract.getAllQuizzes();
-  
+
       console.log('Quizzes fetched successfully:', result);
       setQuizIds(result[0]);
       setQuizQids(result[1]);
-  
     } catch (error) {
       console.error('Error loading quizzes:', error);
       toast.error('Failed to load quizzes. Check console for details.');
@@ -295,115 +338,120 @@ const PdfToQuiz = () => {
       const interval = setInterval(fetchParticipants, 1000);
       return () => clearInterval(interval);
     }
-    loadAllQuizzes();
-    console.log("Wallet Address ",walletAddress);
+    console.log('Wallet Address ', walletAddress);
   }, [quizId]);
 
   const baseUrl = import.meta.env.VITE_CLIENT_URI;
 
   return (
-    <div className="flex items-center justify-center"
+    <div
+      className='flex items-center justify-center'
       style={{ height: 'calc(100vh - 6rem)' }}
     >
-      <div className="max-w-4xl mx-auto">
-        <div className="text-center space-y-4 mb-8">
-          <h1 className="text-4xl md:text-5xl font-bold text-white">
+      <div className='max-w-4xl mx-auto'>
+        <div className='text-center space-y-4 mb-8'>
+          <h1 className='text-4xl md:text-5xl font-bold text-white'>
             Create Quiz from
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400"> PDF </span>
+            <span className='text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400'>
+              {' '}
+              PDF{' '}
+            </span>
           </h1>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20 shadow-xl">
-            <div className="space-y-6">
+        <form onSubmit={handleSubmit} className='space-y-6'>
+          <div className='bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20 shadow-xl'>
+            <div className='space-y-6'>
               {/* Creator Name Input */}
-              <div className="space-y-2">
-                <label className="text-white text-sm font-medium">Creator Name</label>
+              <div className='space-y-2'>
+                <label className='text-white text-sm font-medium'>
+                  Creator Name
+                </label>
                 <input
-                  type="text"
-                  name="creatorName"
+                  type='text'
+                  name='creatorName'
                   value={formData.creatorName}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-400"
-                  placeholder="Enter your name"
+                  className='w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-400'
+                  placeholder='Enter your name'
                   required
                 />
               </div>
 
               {/* Grid for numeric inputs */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <label className="text-white text-sm font-medium flex items-center gap-2">
+              <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+                <div className='space-y-2'>
+                  <label className='text-white text-sm font-medium flex items-center gap-2'>
                     <Users size={16} />
                     Participants
                   </label>
                   <input
-                    type="number"
-                    name="numParticipants"
+                    type='number'
+                    name='numParticipants'
                     value={formData.numParticipants}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-400"
-                    placeholder="Number of participants"
-                    min="1"
+                    className='w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-400'
+                    placeholder='Number of participants'
+                    min='1'
                     required
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-white text-sm font-medium flex items-center gap-2">
+                <div className='space-y-2'>
+                  <label className='text-white text-sm font-medium flex items-center gap-2'>
                     <HelpCircle size={16} />
                     Questions
                   </label>
                   <input
-                    type="number"
-                    name="questionCount"
+                    type='number'
+                    name='questionCount'
                     value={formData.questionCount}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-400"
-                    placeholder="Number of questions"
-                    min="1"
-                    max="30"
+                    className='w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-400'
+                    placeholder='Number of questions'
+                    min='1'
+                    max='30'
                     required
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-white text-sm font-medium flex items-center gap-2">
+                <div className='space-y-2'>
+                  <label className='text-white text-sm font-medium flex items-center gap-2'>
                     <Trophy size={16} />
                     Reward
                   </label>
                   <input
-                    type="number"
-                    name="rewardPerScore"
+                    type='number'
+                    name='rewardPerScore'
                     value={formData.rewardPerScore}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-400"
-                    placeholder="Reward per score"
-                    min="1"
+                    className='w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-400'
+                    placeholder='Reward per score'
+                    min='1'
                     required
                   />
                 </div>
               </div>
 
               {/* PDF Upload Section */}
-              <div className="space-y-2">
-                <label className="text-white text-sm font-medium flex items-center gap-2">
+              <div className='space-y-2'>
+                <label className='text-white text-sm font-medium flex items-center gap-2'>
                   <FileText size={16} />
                   PDF Document
                 </label>
-                <div className="relative">
+                <div className='relative'>
                   <input
-                    id="pdf-upload"
-                    type="file"
-                    accept="application/pdf"
+                    id='pdf-upload'
+                    type='file'
+                    accept='application/pdf'
                     onChange={handleFileChange}
-                    className="hidden"
+                    className='hidden'
                     required
                     ref={fileInputRef}
                   />
                   <label
-                    htmlFor="pdf-upload"
-                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white flex items-center justify-center gap-2 cursor-pointer hover:bg-white/20 transition-colors"
+                    htmlFor='pdf-upload'
+                    className='w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white flex items-center justify-center gap-2 cursor-pointer hover:bg-white/20 transition-colors'
                   >
                     <Upload size={20} />
                     {pdfFile ? pdfFile.name : 'Choose PDF File'}
@@ -413,12 +461,12 @@ const PdfToQuiz = () => {
 
               {/* Submit Button */}
               <button
-                type="submit"
+                type='submit'
                 disabled={loading}
-                className="w-full px-6 py-4 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl text-white font-medium hover:opacity-90 transition-opacity flex items-center justify-center gap-2 disabled:opacity-50"
+                className='w-full px-6 py-4 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl text-white font-medium hover:opacity-90 transition-opacity flex items-center justify-center gap-2 disabled:opacity-50'
               >
                 {loading ? (
-                  <CircularProgress size={24} color="inherit" />
+                  <CircularProgress size={24} color='inherit' />
                 ) : (
                   <>
                     <FileText size={20} />
@@ -431,28 +479,29 @@ const PdfToQuiz = () => {
         </form>
 
         {/* Dialog */}
-        <Dialog 
-          open={open} 
-          onClose={(_, reason) => reason === 'backdropClick' ? null : handleClose}
-          maxWidth="md" 
+        <Dialog
+          open={open}
+          onClose={(_, reason) =>
+            reason === 'backdropClick' ? null : handleClose
+          }
+          maxWidth='md'
           fullWidth
           PaperProps={{
             style: {
-              backgroundColor: '#1a103d',
-              backgroundImage: 'linear-gradient(to bottom right, rgba(147, 51, 234, 0.1), rgba(79, 70, 229, 0.1))',
+              backgroundColor: '#581c87',
               borderRadius: '1rem',
               border: '1px solid rgba(255, 255, 255, 0.1)',
-            }
+            },
           }}
         >
           <DialogContent>
-            <div className="grid md:grid-cols-2 gap-8">
+            <div className='grid md:grid-cols-2 gap-8'>
               {/* QR Code Section */}
-              <div className="flex flex-col items-center gap-6" ref={qrRef}>
-                <h2 className="text-2xl font-bold text-white">
-                  Quiz ID: <span className="text-purple-400">{quizId}</span>
+              <div className='flex flex-col items-center gap-6' ref={qrRef}>
+                <h2 className='text-2xl font-bold text-white'>
+                  Quiz ID: <span className='text-purple-400'>#{quizId}</span>
                 </h2>
-                <div className="bg-white p-4 rounded-xl">
+                <div className='bg-white p-4 rounded-xl'>
                   <QRCodeSVG value={`${baseUrl}/quiz/${quizId}`} size={256} />
                 </div>
                 <TextField
@@ -460,9 +509,9 @@ const PdfToQuiz = () => {
                   InputProps={{
                     readOnly: true,
                     endAdornment: (
-                      <InputAdornment position="end">
+                      <InputAdornment position='end'>
                         <IconButton onClick={handleCopy}>
-                          <Copy className="text-purple-400" size={20} />
+                          <Copy className='text-purple-400' size={20} />
                         </IconButton>
                       </InputAdornment>
                     ),
@@ -472,22 +521,24 @@ const PdfToQuiz = () => {
                     '& .MuiInputBase-root': {
                       color: 'white',
                       backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                    }
+                    },
                   }}
                 />
               </div>
 
               {/* Participants Section */}
-              <div className="space-y-4">
-                <h2 className="text-2xl font-bold text-white text-center">Participants</h2>
-                <div className="bg-white/10 rounded-xl p-4 max-h-[300px] overflow-y-auto">
+              <div className='space-y-4'>
+                <h2 className='text-2xl font-bold text-white text-center'>
+                  Participants
+                </h2>
+                <div className='bg-white/10 rounded-xl p-4 max-h-[300px] overflow-y-auto'>
                   {participants.map((participant) => (
-                    <div 
+                    <div
                       key={participant.walletAddress}
-                      className="flex justify-between items-center py-2 px-4 border-b border-white/10 text-white"
+                      className='flex justify-between items-center py-2 px-4 border-b border-white/10 text-white'
                     >
                       <span>{participant.participantName}</span>
-                      <span className="font-mono">
+                      <span className='font-mono'>
                         {participant.score !== null ? participant.score : 'N/A'}
                       </span>
                     </div>
@@ -497,36 +548,38 @@ const PdfToQuiz = () => {
             </div>
           </DialogContent>
 
-          <DialogActions className="p-4 bg-white/5">
-            <IconButton onClick={handleDownload} className="text-purple-400">
-              <Download size={20} />
+          <DialogActions className='p-4 bg-white/5'>
+            <IconButton onClick={handleDownload} className='text-purple-400'>
+              <Download size={20} style={{ color: 'white' }} />
             </IconButton>
-            <Button 
-              onClick={handleClose} 
+            <Button
+              onClick={handleClose}
               disabled={closeDisabled}
-              className="text-purple-400"
+              color='white'
             >
               Close
             </Button>
             <Button
               onClick={handleStartQuiz}
               disabled={isPublic || loading || startDisabled}
-              className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-2 rounded-lg"
+              color='white'
+              className='bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-2 rounded-lg'
             >
               Start Quiz
             </Button>
             <Button
               onClick={handleStopQuiz}
               disabled={!isPublic || loading}
-              className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-2 rounded-lg"
+              color='white'
+              className='bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-2 rounded-lg'
             >
               Stop Quiz
             </Button>
           </DialogActions>
         </Dialog>
-
+      </div>
     </div>
-    </div>
-  )}
+  );
+};
 
 export default PdfToQuiz;
