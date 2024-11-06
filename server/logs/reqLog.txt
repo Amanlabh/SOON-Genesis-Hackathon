@@ -1,0 +1,16 @@
+20241101	12:29:04	c641dad6-8035-412e-91f6-59046fffc192	GET	http://localhost:5173	/api/quiz/leaderboards/mxh39
+20241101	12:29:05	8d6bc66d-b8d6-4234-b67f-24ad355c6648	GET	http://localhost:5173	/api/quiz/leaderboards/mxh39
+20241101	12:29:06	d2611d9c-196e-4a08-81a1-e4a5dc05d73e	GET	http://localhost:5173	/api/quiz/leaderboards/mxh39
+20241101	12:29:07	a10ec68a-020f-499f-9c92-fba0a9a0c561	GET	http://localhost:5173	/api/quiz/leaderboards/mxh39
+20241101	12:29:08	30fba93c-4eb5-4bed-94de-32c7fa069451	GET	http://localhost:5173	/api/quiz/leaderboards/mxh39
+20241101	12:29:09	e78cffb7-0bc4-40ea-9177-0958c3858cec	GET	http://localhost:5173	/api/quiz/leaderboards/mxh39
+20241101	12:29:10	592ea303-a232-491e-927a-0ca3d70ef331	GET	http://localhost:5173	/api/quiz/leaderboards/mxh39
+20241101	12:29:11	60dd2b21-e928-4ebf-a2b1-dcb7cb1b44a9	GET	http://localhost:5173	/api/quiz/leaderboards/mxh39
+20241101	12:29:12	3cacb6f9-8830-4fcf-adb3-e02e646b9f55	GET	http://localhost:5173	/api/quiz/leaderboards/mxh39
+20241101	12:29:13	3000c6c4-9447-4f6a-b61e-2ed2f75955c6	GET	http://localhost:5173	/api/quiz/leaderboards/mxh39
+20241101	12:29:14	cac8eb28-ae45-4cd5-bd3d-68d13a4f4bf0	GET	http://localhost:5173	/api/quiz/leaderboards/mxh39
+20241101	12:29:15	d0185924-4df9-4425-b058-85aa33395bec	GET	http://localhost:5173	/api/quiz/leaderboards/mxh39
+20241101	12:29:16	75e13227-4980-463a-b7b1-50554220f91d	GET	http://localhost:5173	/api/quiz/leaderboards/mxh39
+20241101	12:29:17	f01cf5d6-a9bc-4d94-a4b1-37ad7322b340	GET	http://localhost:5173	/api/quiz/leaderboards/mxh39
+20241101	12:29:18	6796e660-8260-4afa-b287-b58400ccf2bf	GET	http://localhost:5173	/api/quiz/leaderboards/mxh39
+20241101	12:29:19	02fce392-b592-4697-9ad7-0ce718d86cdb	GET	http://localhost:5173	/api/quiz/leaderboards/mxh39
