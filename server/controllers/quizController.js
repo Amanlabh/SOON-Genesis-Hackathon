@@ -1,17 +1,24 @@
 const Quiz = require('../models/Quiz');
 const Participant = require('../models/Participant');
-const { GoogleGenerativeAI } = require('@google/generative-ai');
-const { GoogleAIFileManager } = require('@google/generative-ai/server');
-
+const AWS = require('aws-sdk');
 const fs = require('fs');
 const path = require('path');
 const tmp = require('tmp');
-const { log } = require('console');
+const pdfParse = require('pdf-parse');
 
-const genAI = new GoogleGenerativeAI(process.env.API_KEY);
-const fileManager = new GoogleAIFileManager(process.env.API_KEY);
+// Configure AWS SDK
+AWS.config.update({
+  region: 'us-east-1', // Replace with your region
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+});
 
-// Robust Question Extraction Function
+const bedrock = new AWS.Bedrock();
+const bedrockRuntime = new AWS.BedrockRuntime();
+
+const modelId = process.env.MODEL_ID;
+
+// Robust Question Extraction Function (unchanged)
 const extractQuestions = (responseText) => {
   // Multiple regex patterns to handle different possible formats
   const patterns = [
@@ -78,23 +85,18 @@ exports.createQuizByPrompt = async (req, res) => {
     isPublic,
   } = req.body;
 
-  console.log({
-    creatorName: creatorName,
-    creatorWallet: creatorWallet,
-    prompt: prompt,
-    numParticipants: numParticipants,
-    questionCount: questionCount,
-    rewardPerScore: rewardPerScore,
-    isPublic: isPublic,
-  });
-
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-
-    // More explicit and structured prompt
-    const result = await model.generateContent([
-      {
-        text: `Generate a quiz with exactly ${questionCount} multiple-choice questions about "${prompt}". 
+    const params = {
+      modelId,
+      contentType: 'application/json',
+      accept: 'application/json',
+      body: JSON.stringify({
+        anthropic_version: 'bedrock-2023-05-31',
+        max_tokens: 2000,
+        messages: [
+          {
+            role: 'user',
+            content: `Generate a quiz with exactly ${questionCount} multiple-choice questions about "${prompt}". 
 
 IMPORTANT FORMATTING INSTRUCTIONS:
 - Each question must have EXACTLY 4 options: A, B, C, and D
@@ -110,12 +112,14 @@ Correct Answer: [A/B/C/D]
 
 Question 2: [Next Question Text]
 ...and so on.`,
-      },
-    ]);
+          },
+        ],
+      }),
+    };
 
-    // Use the robust extraction function
-    const questions = extractQuestions(result.response.text());
-    console.log('Questions:', questions);
+    const response = await bedrockRuntime.invokeModel(params).promise();
+    const result = JSON.parse(new TextDecoder().decode(response.body));
+    const questions = extractQuestions(result.content[0].text);
 
     // Rest of the code remains the same
     const totalCost = rewardPerScore * numParticipants * 1.1;
@@ -132,9 +136,6 @@ Question 2: [Next Question Text]
       rewardPerScore,
       isPublic,
     });
-
-    await quiz.save();
-    console.log(quiz);
 
     await quiz.save();
     res.status(201).json(quiz);
@@ -161,27 +162,25 @@ exports.createQuizByPdf = async (req, res) => {
   }
 
   try {
-    const tempFile = tmp.fileSync({ postfix: '.pdf' });
-    fs.writeFileSync(tempFile.name, pdfFile.buffer);
+    // Extract text from PDF
+    const pdfData = await pdfParse(pdfFile.buffer);
+    const pdfText = pdfData.text;
 
-    const uploadResponse = await fileManager.uploadFile(tempFile.name, {
-      mimeType: pdfFile.mimetype,
-      displayName: pdfFile.originalname,
-    });
+    const params = {
+      modelId,
+      contentType: 'application/json',
+      accept: 'application/json',
+      body: JSON.stringify({
+        anthropic_version: 'bedrock-2023-05-31',
+        max_tokens: 2000,
+        messages: [
+          {
+            role: 'user',
+            content: `The following is the content of a PDF document:
 
-    fs.unlinkSync(tempFile.name);
+${pdfText}
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-
-    const result = await model.generateContent([
-      {
-        fileData: {
-          mimeType: uploadResponse.file.mimeType,
-          fileUri: uploadResponse.file.uri,
-        },
-      },
-      {
-        text: `Generate a quiz with exactly ${questionCount} multiple-choice questions based on the document. 
+Based on this content, generate a quiz with exactly ${questionCount} multiple-choice questions.
 
 IMPORTANT FORMATTING INSTRUCTIONS:
 - Each question must have EXACTLY 4 options: A, B, C, and D
@@ -197,11 +196,14 @@ Correct Answer: [A/B/C/D]
 
 Question 2: [Next Question Text]
 ...and so on.`,
-      },
-    ]);
+          },
+        ],
+      }),
+    };
 
-    // Use the robust extraction function
-    const questions = extractQuestions(result.response.text());
+    const response = await bedrockRuntime.invokeModel(params).promise();
+    const result = JSON.parse(new TextDecoder().decode(response.body));
+    const questions = extractQuestions(result.content[0].text);
 
     const quizId = Math.random().toString(36).substring(2, 7);
 
@@ -273,11 +275,9 @@ exports.getQuiz = async (req, res) => {
 
     const participantCount = await Participant.countDocuments({ quizId });
     if (participantCount >= quiz.numParticipants) {
-      return res
-        .status(403)
-        .json({
-          error: 'The number of participants for this quiz has been reached.',
-        });
+      return res.status(403).json({
+        error: 'The number of participants for this quiz has been reached.',
+      });
     }
 
     res.status(200).json(quiz);
@@ -311,11 +311,9 @@ exports.joinQuiz = async (req, res) => {
 
     const participantCount = await Participant.countDocuments({ quizId });
     if (participantCount >= quiz.numParticipants) {
-      return res
-        .status(403)
-        .json({
-          error: 'The number of participants for this quiz has been reached.',
-        });
+      return res.status(403).json({
+        error: 'The number of participants for this quiz has been reached.',
+      });
     }
 
     const participant = new Participant({
